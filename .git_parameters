@@ -1,0 +1,12 @@
+user="<your_username>"
+token='private_token_generate_from_git'
+github_api="https://api.github.com/users/${user}/repos"
+gitlab_api="https://gitlab.com/api/v4/projects"
+github_api_string="-u ${user}:${token} ${github_api}?per_page=100"
+gitlab_api_string="${gitlab_api}?private_token=${token}&per_page=100"
+repo_date="YYYY-MM"
+excluded_group="pippo" # this value must be filled, used random word if you don't want to exclude anything
+base_dir="/some/existing/path"
+branch1=""
+branch2=""
+branch3=""
