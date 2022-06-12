@@ -12,8 +12,12 @@ Cyan='\033[0;36m'         # Cyan
 source ".git_parameters"
 
 
-## Take repos list
-curl=$(curl --noproxy '*' "${gitlab_api_string}" "${gitlab_api_string}&page=2" | sed -e 's/[{}]/''/g' | awk -v k="text" '{n=split($0,a,","); for (i=1; i<=n; i++) print a[i]}' | grep 'ssh\|last' | grep -B 1 ${repo_date} | grep 'git@' | awk -F \" '{print $4}' | grep -vE "${excluded_group}" | grep "$1/" | sort);
+## Take repos list (choose one from the list below and comment the others)
+# GitHub
+curl=$(curl --noproxy '*' -u ${user}:${token} "${github_api}?per_page=100" | sed -e 's/[{}]/''/g' | awk -v k="text" '{n=split($0,a,","); for (i=1; i<=n; i++) print a[i]}' | grep 'ssh\|updated' | grep -A 1 ${repo_date} | grep 'git@' | awk -F \" '{print $4}' | grep -vE "${excluded_group}" | grep "$1/" | sort);
+# GitLab
+curl=$(curl --noproxy '*' "${gitlab_api}?private_token=${token}&per_page=100" | sed -e 's/[{}]/''/g' | awk -v k="text" '{n=split($0,a,","); for (i=1; i<=n; i++) print a[i]}' | grep 'ssh\|last' | grep -B 1 ${repo_date} | grep 'git@' | awk -F \" '{print $4}' | grep -vE "${excluded_group}" | grep "$1/" | sort);
+
 
 
 ## Function
