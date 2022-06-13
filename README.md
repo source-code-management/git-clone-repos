@@ -1,4 +1,4 @@
-<h1>git-clone-repos<h1>
+# git-clone-repos
 Bash script that clone all repos, placing them inside group folders
 
 This file provide an istructions for all the variables inside the file ".git_parameters"
@@ -9,7 +9,7 @@ If we use GitLab, the only variables that can be left empty are:
 > organization="<your_organization>"
 
 
-<h2>Variables Explanation<h2>
+# Variables Explanation
 $user           --> user with whom to authenticate to github 
 $organization   --> if using github organizations, it must be defined to see repositories
 $token          --> token generate from GitHub/GitLab for authentication
