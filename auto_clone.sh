@@ -1,3 +1,6 @@
+#!/bin/bash
+
+
 ###################################################################################################################
 ##
 ##  NAME
@@ -35,8 +38,6 @@
 ###################################################################################################################
 
 
-#!/bin/bash
-
 ## Color Table
 Green='\033[0;32m'        # Green
 Cyan='\033[0;36m'         # Cyan
@@ -60,7 +61,7 @@ curl=$(curl --noproxy '*' -u ${user}:${token} "${github_api}?per_page=100" | sed
 # GitLab
 # curl=$(curl --noproxy '*' "${gitlab_api}?private_token=${token}&per_page=100" | sed -e 's/[{}]/''/g' | awk -v k="text" '{n=split($0,a,","); for (i=1; i<=n; i++) print a[i]}' | grep 'ssh\|last' | grep -B 1 ${repo_date} | grep 'git@' | awk -F \" '{print $4}' | grep -vE "${excluded_group}" | grep "$1/" | sort);
 
-	
+
 ####################################################################################################################
 
 
@@ -107,7 +108,7 @@ git-clone-repo-in-group-folder () {
 ####################################################################################################################
 
 
-## This "for loop" sync all the repo modified in according to the ${repo_date} variable.
+## This "for" loop syncs all the repos modified according to the ${repo_date} variable.
 for repos in $curl
 do
     without_suffix=${repos%.git};
@@ -121,4 +122,3 @@ do
     cd $base_dir/
     git-clone-repo-in-group-folder
 done
-
