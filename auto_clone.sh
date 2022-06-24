@@ -1,35 +1,38 @@
-###  auto_clone.sh
-###
-###  SUMMARY
-###  The purpose of this script is to contact the GitHub/GitLab API, authenticating with a previously created token,
-###  to read the list of "organization/repository" on which the user has visibility.
-###  In the case of GitLab, "organization/repository" corresponds to "group/project".
-###
-###  DETAILS
-###  This script do a curl to the GitHub/GitLab API web url.
-###  The result of the curl is filtered through a series of "sed", "awk" and "grep", returning a list of ssh strings
-###  that will be used for cloning the various repositories.
-###  In this curl stage, three parameters can be passed:
-###    ${repo_date} -> filters all repos of a specific date YYYY-MM-DD (eg. all repo updated in 2022).
-###    ${excluded_group} -> excludes a specific "organization" (or "group" for GitLab) from the list that will be cloned.
-###    $1 -> passed when the script was launched (eg "auto_clone.sh my_org") allows you to clone only the repositories belonging to the chosen organization.
-###  Once the list to be cloned has been obtained, the script takes the name of the various organizations (or groups) and the various repositories,
-###  contained in the ssh string, creates folders that reflect the same path tree, starting from a directory decided by the variable ${base_dir}.
-###  If the repository is not present at the chosen path, it will be cloned on a specific branch taken from a decreasing priority list,
-###  in case there is no preferred branch lis, the repository will be cloned on the default branch.
-###  If, on the other hand, the repo is present at the chosen path, the script will take the name of the current branch,
-###  delete the synchronized repository and clone the repo on the branch that it was on before
-###  (this assumes that the branch also exists remotely and not only locally ).
-###   All the clone activity is done using a temporary support directory, called "fetching", which will be deleted at the end of the script.
-###
-####################################################################################
-###
-###  WORKLOG:
-###  2022-04-01		Enrico C.       			Initial draft
-###  2022-05-01		Enrico C.   			    Added "if" condition for already sync repos
-###  2022-06-01     Enrico C.                   Refactoring and introducing variable
-###
-####################################################################################
+###################################################################################################################
+##
+##  NAME
+##  auto_clone.sh
+##
+##  SUMMARY
+##  The purpose of this script is to contact the GitHub/GitLab API, authenticating with a previously created token,
+##  to read the list of "organization/repository" on which the user has visibility.
+##  In the case of GitLab, "organization/repository" corresponds to "group/project".
+##
+##  DETAILS
+##  This script do a curl to the GitHub/GitLab API web url.
+##  The result of the curl is filtered through a series of "sed", "awk" and "grep", returning a list of ssh strings
+##  that will be used for cloning the various repositories.
+##  In this curl stage, three parameters can be passed:
+##    ${repo_date} -> filters all repos of a specific date YYYY-MM-DD (eg. all repo updated in 2022).
+##    ${excluded_group} -> excludes a specific "organization" (or "group" for GitLab) from the list that will be cloned.
+##    $1 -> passed when the script was launched (eg "auto_clone.sh my_org") allows you to clone only the repositories belonging to the chosen organization.
+##  Once the list to be cloned has been obtained, the script takes the name of the various organizations (or groups) and the various repositories,
+##  contained in the ssh string, creates folders that reflect the same path tree, starting from a directory decided by the variable ${base_dir}.
+##  If the repository is not present at the chosen path, it will be cloned on a specific branch taken from a decreasing priority list,
+##  in case there is no preferred branch lis, the repository will be cloned on the default branch.
+##  If, on the other hand, the repo is present at the chosen path, the script will take the name of the current branch,
+##  delete the synchronized repository and clone the repo on the branch that it was on before
+##  (this assumes that the branch also exists remotely and not only locally ).
+##  All the clone activity is done using a temporary support directory, called "fetching", which will be deleted at the end of the script.
+##
+###################################################################################################################
+##
+##  WORKLOG:
+##  2022-04-01		Enrico C.					Initial draft
+##  2022-05-01		Enrico C.					Added "if" condition for already sync repos
+##  2022-06-01		Enrico C.					Refactoring and introducing variable
+##
+###################################################################################################################
 
 
 #!/bin/bash
@@ -41,14 +44,14 @@ Cyan='\033[0;36m'         # Cyan
 NC='\033[0m'              # Color Text Reset
 
 
-####################################################################################
+####################################################################################################################
 
 
 ## Variables
 source ".git_parameters"
 
 
-####################################################################################
+####################################################################################################################
 
 
 ## Take repos list (choose one from the list below and comment the others).
@@ -58,7 +61,7 @@ curl=$(curl --noproxy '*' -u ${user}:${token} "${github_api}?per_page=100" | sed
 # curl=$(curl --noproxy '*' "${gitlab_api}?private_token=${token}&per_page=100" | sed -e 's/[{}]/''/g' | awk -v k="text" '{n=split($0,a,","); for (i=1; i<=n; i++) print a[i]}' | grep 'ssh\|last' | grep -B 1 ${repo_date} | grep 'git@' | awk -F \" '{print $4}' | grep -vE "${excluded_group}" | grep "$1/" | sort);
 
 	
-####################################################################################
+####################################################################################################################
 
 
 ## Main Function.
@@ -101,7 +104,7 @@ git-clone-repo-in-group-folder () {
 }
 
 
-####################################################################################
+####################################################################################################################
 
 
 ## This "for loop" sync all the repo modified in according to the ${repo_date} variable.
