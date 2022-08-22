@@ -34,6 +34,7 @@
 ##  2022-04-01		Enrico C.					Initial draft
 ##  2022-05-01		Enrico C.					Added "if" condition for already sync repos
 ##  2022-06-01		Enrico C.					Refactoring and introducing variable
+##  2022-08-19		Enrico C.					Refactoring $repo_date variable, sync from the given date to the most recent
 ##
 ###################################################################################################################
 
@@ -50,6 +51,18 @@ NC='\033[0m'              # Color Text Reset
 
 ## Variables
 source ".git_parameters"
+# set $repo_date
+if [[ -z $repo_month ]]; then
+  repo_date="${repo_year}";
+elif (( ${repo_month} > 0 )) && (( ${repo_month} < 10 )); then
+  last_num=${repo_month: -1};
+  repo_date="${repo_year}-0[${last_num}-9]\|2022-1[0-2]";
+elif (( ${repo_month} >= 10 )) && (( ${repo_month} <= 12 )); then
+  last_num=${repo_month: -1};
+  repo_date="${repo_year}-1[${last_num}-2]";
+else
+  repo_date="${repo_year}";
+fi
 
 
 ####################################################################################################################
