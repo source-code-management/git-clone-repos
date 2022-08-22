@@ -4,7 +4,9 @@
 # ${token}          --> 'token generate from GitHub/GitLab for authentication'
 # ${github_api}     --> 'there are two URLs, one for the repos list of the user and another for the repos list of the organization'
 # ${gitlab_api}     --> 'this is for GitLab repos list'
-# ${repo_date}      --> 'use this variable to filter the results by date. the date format is YYYY-MM-DD, you can insert it all or even a part, eg. 2022 or 2022-05. if you don`t want any filter you can put "date" as value'
+# ${repo_year}      --> 'use this variable to filter the results by date. the date format is YYYY, eg. 2022. if you don`t want any filter you can put "date" as value'
+# ${repo_month}     --> 'use this variable to filter the results by date. the date format is MM, eg. 07. if you don`t want any filter you can leave it blank'
+# ${repo_date}      --> 'this variable combine the ${repo_year} and ${repo_month} to filter the results, starting from the date entered up to the most recent. if you want filter a specific date, you can insert it in the ${repo_year} variable, eg. repo_year="2022-07" or repo_year="2022-07-28"'
 # ${excluded_group} --> 'use it to exclude one organization/group from the list. if you don`t want any filter you must put a random word as value (eg. "pippo")'
 # ${base_dir}       --> 'specify where you want all the cloned repos'
 # ${branch}         --> 'all these 3 variables must be defined. if you don`t know or don`t have a branch priority, you can put a random word as a value to be able to clone the default branch (eg. "pippo")'
@@ -20,10 +22,11 @@ github_api="https://api.github.com/orgs/${organization}/repos"      # org repos
 
 gitlab_api="https://gitlab.com/api/v4/projects"
 
-repo_date="YYYY-MM"
+repo_year="YYYY"
+repo_month="MM"
+# repo_date="YYYY-MM"
 excluded_group="pippo" # this value must be filled, used random word if you don't want to exclude anything
 base_dir="/some/existing/path"
 branch1="pippo1" # this value must be filled, used random word if you don't have a priority list branch
 branch2="pippo2" # this value must be filled, used random word if you don't have a priority list branch
 branch3="pippo3" # this value must be filled, used random word if you don't have a priority list branch
-

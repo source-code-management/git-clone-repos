@@ -1,3 +1,6 @@
+#!/bin/bash
+
+
 ###################################################################################################################
 ##
 ##  NAME
@@ -31,11 +34,10 @@
 ##  2022-04-01		Enrico C.					Initial draft
 ##  2022-05-01		Enrico C.					Added "if" condition for already sync repos
 ##  2022-06-01		Enrico C.					Refactoring and introducing variable
+##  2022-08-19		Enrico C.					Refactoring $repo_date variable, sync from the given date to the most recent
 ##
 ###################################################################################################################
 
-
-#!/bin/bash
 
 ## Color Table
 Green='\033[0;32m'        # Green
@@ -49,6 +51,18 @@ NC='\033[0m'              # Color Text Reset
 
 ## Variables
 source ".git_parameters"
+# set $repo_date
+if [[ -z $repo_month ]]; then
+  repo_date="${repo_year}";
+elif (( ${repo_month} > 0 )) && (( ${repo_month} < 10 )); then
+  last_num=${repo_month: -1};
+  repo_date="${repo_year}-0[${last_num}-9]\|2022-1[0-2]";
+elif (( ${repo_month} >= 10 )) && (( ${repo_month} <= 12 )); then
+  last_num=${repo_month: -1};
+  repo_date="${repo_year}-1[${last_num}-2]";
+else
+  repo_date="${repo_year}";
+fi
 
 
 ####################################################################################################################
@@ -60,7 +74,7 @@ curl=$(curl --noproxy '*' -u ${user}:${token} "${github_api}?per_page=100" | sed
 # GitLab
 # curl=$(curl --noproxy '*' "${gitlab_api}?private_token=${token}&per_page=100" | sed -e 's/[{}]/''/g' | awk -v k="text" '{n=split($0,a,","); for (i=1; i<=n; i++) print a[i]}' | grep 'ssh\|last' | grep -B 1 ${repo_date} | grep 'git@' | awk -F \" '{print $4}' | grep -vE "${excluded_group}" | grep "$1/" | sort);
 
-	
+
 ####################################################################################################################
 
 
@@ -107,7 +121,7 @@ git-clone-repo-in-group-folder () {
 ####################################################################################################################
 
 
-## This "for loop" sync all the repo modified in according to the ${repo_date} variable.
+## This "for" loop syncs all the repos modified according to the ${repo_date} variable.
 for repos in $curl
 do
     without_suffix=${repos%.git};
@@ -121,4 +135,3 @@ do
     cd $base_dir/
     git-clone-repo-in-group-folder
 done
-
