@@ -36,6 +36,7 @@
 ##  2022-06-01		Enrico C.					Refactoring and introducing variable
 ##  2022-08-19		Enrico C.					Refactoring $repo_date variable, sync from the given date to the most recent
 ##  2023-09-05		Enrico C.					Fix on time range for sync, based on $repo_date var.
+##  2024-05-14		Enrico C.					Implement subfolder logic to split repos by pourpose.
 ##
 ###################################################################################################################
 
@@ -51,7 +52,10 @@ NC='\033[0m'              # Color Text Reset
 
 
 ## Variables.
-source ".git_parameters"
+source "../.git_parameters"
+source "../.github_parameters"
+# source "../.gitlab_parameters"
+
 # set $repo_date
 if [[ -z $repo_month ]]; then
   repo_date="${repo_year}";
@@ -71,10 +75,19 @@ fi
 
 ## Take repos list (choose one from the list below and comment the others).
 # GitHub
-curl=$(curl --noproxy '*' "${github_api_string}" | sed -e 's/[{}]/''/g' | awk -v k="text" '{n=split($0,a,","); for (i=1; i<=n; i++) print a[i]}' | grep 'ssh\|updated' | grep -A 1 "${repo_date}" | grep 'git@' | awk -F \" '{print $4}' | grep -v "${excluded_group}" | grep "$1/" | sort);
-# GitLab
-# curl=$(curl --noproxy '*' "${gitlab_api_string}" "${gitlab_api_string}&page=2" | sed -e 's/[{}]/''/g' | awk -v k="text" '{n=split($0,a,","); for (i=1; i<=n; i++) print a[i]}' | grep 'ssh\|last' | grep -B 1 "${repo_date}" | grep 'git@' | awk -F \" '{print $4}' | grep -v ${excluded_group}" | grep "$1/" | sort);
+# curl=$(curl ${github_api_string} | sed -e 's/[{}]/''/g' | awk -v k="text" '{n=split($0,a,","); for (i=1; i<=n; i++) print a[i]}' | grep 'ssh\|updated' | grep -A 1 "${repo_date}" | grep 'git@' | awk -F \" '{print $4}' | grep -v "${excluded_group}" | grep "$1/" | sort);
 
+# GitHub multiple organizations
+if [[ -z $organizations ]]; then
+    repositories=$(curl ${github_api_string} | sed -e 's/[{}]/''/g' | awk -v k="text" '{n=split($0,a,","); for (i=1; i<=n; i++) print a[i]}' | grep 'ssh\|updated' | grep -A 1 "${repo_date}" | grep 'git@' | awk -F \" '{print $4}' | grep -v "${excluded_group}" | grep "$1/" | sort);
+else
+    for org in $organizations;
+    do
+        github_api="https://api.github.com/orgs/${org}/repos"
+        github_api_string="-u ${user}:${token} ${github_api}?per_page=100 ${github_api}?per_page=100&page=2"
+        repositories+=' '$(curl ${github_api_string} | sed -e 's/[{}]/''/g' | awk -v k="text" '{n=split($0,a,","); for (i=1; i<=n; i++) print a[i]}' | grep 'ssh\|updated' | grep -A 1 "${repo_date}" | grep 'git@' | awk -F \" '{print $4}' | grep -v "${excluded_group}" | grep "$1/" | sort);
+    done
+fi
 
 ####################################################################################################################
 
@@ -83,34 +96,32 @@ curl=$(curl --noproxy '*' "${github_api_string}" | sed -e 's/[{}]/''/g' | awk -v
 # Set the function that will clone all repositories.
 git-clone-repo-in-group-folder () {
     # Set the "if" the pick up the current repo and it's branch, delete the repo and reclone it.
-    if [[  -d "$repo_group/$repo_name" ]]; then
-        for branch_name in $(git -C "$repo_group/$repo_name" rev-parse --abbrev-ref HEAD); do
-            echo -e "--- Checking and upgrading the ${Cyan}$repo_group/$repo_name${NC} directory ---";
-            rm -rf "$repo_group/$repo_name";
-            git clone --branch "$branch_name" "$repos" "$repo_group/$repo_name" 2>&1 | grep --color=auto -vE "^fatal: destination path .+? already exists and is not an empty directory.$" || true;
-            echo -e "switched ${Cyan}$repo_name${NC} to the branch: ${Cyan}$branch_name${NC}";
+    if [[  -d "$organization/$repo_group/$repo_name" ]]; then
+        for branch_name in $(git -C "$organization/$repo_group/$repo_name" rev-parse --abbrev-ref HEAD); do
+            echo -e "--- Checking and upgrading the ${Cyan}$organization/$repo_group/$repo_name${NC} directory ---";
+            rm -rf "$organization/$repo_group/$repo_name";
+            git clone --branch "$branch_name" "$repository" "$organization/$repo_group/$repo_name" 2>&1 | grep --color=auto -vE "^fatal: destination path .+? already exists and is not an empty directory.$" || true;
+            echo -e "switched ${Cyan}$project${NC} to the branch: ${Cyan}$branch_name${NC}";
         done
     else
     # Set the "for" that will clone all the new or missing repositories.
-        for r in $repo_name; do
+        for repo in $repository; do
             echo "";
-            echo -e "--- Cloning the new ${Cyan}$repo_group/$repo_name${NC} ---";
+            echo -e "--- Cloning the new ${Cyan}$organization/$repo_group/$repo_name${NC} ---";
             git init fetching &>/dev/null ;
-            git -C fetching fetch --tags --force --progress --depth=1 -- "$repos" +refs/heads/*:refs/remotes/origin/* &>/dev/null;
-            mkdir -p "$repo_group";
+            git -C fetching fetch --tags --force --progress --depth=1 -- "$repository" +refs/heads/*:refs/remotes/origin/* &>/dev/null;
+            mkdir -p "$organization";
+            touch $organization/.team_folder && chmod 111 $organization/.team_folder;
             branch_list="$(git -C fetching/ rev-parse --abbrev-ref $(git -C fetching/ branch -r) | awk -F "/" '{$1=""; print $0}')"
             if [[ $( (echo $branch_list) | tr ' ' '\n' | grep -E "^${branch1}$") == "${branch1}" ]]; then
-                git clone "$repos" "$repo_group/$repo_name" --branch "${branch1}" 2>&1 | grep --color=auto -vE "^fatal: destination path .+? already exists and is not an empty directory.$" || true;
-                echo -e "switched ${Cyan}$repo_name${NC} to the branch: ${Cyan}${branch1}${NC}";
+                git clone "$repository" "$organization/$repo_group/$repo_name" --branch "${branch1}" 2>&1 | grep --color=auto -vE "^fatal: destination path .+? already exists and is not an empty directory.$" || true;
+                echo -e "switched ${Cyan}$project${NC} to the branch: ${Cyan}${branch1}${NC}";
             elif [[ $( (echo $branch_list) | tr ' ' '\n' | grep -E "^${branch2}$") == "${branch2}" ]]; then
-                git clone "$repos" "$repo_group/$repo_name" --branch "${branch2}" 2>&1 | grep --color=auto -vE "^fatal: destination path .+? already exists and is not an empty directory.$" || true;
-                echo -e "switched ${Cyan}$repo_name${NC} to the branch: ${Cyan}${branch2}${NC}";
-            elif [[ $( (echo $branch_list) | tr ' ' '\n' | grep -E "^${branch3}$") == "${branch3}" ]]; then
-                git clone "$repos" "$repo_group/$repo_name" --branch "${branch3}" 2>&1 | grep --color=auto -vE "^fatal: destination path .+? already exists and is not an empty directory.$" || true;
-                echo -e "switched ${Cyan}$repo_name${NC} to the branch: ${Cyan}${branch3}${NC}";
+                git clone "$repository" "$organization/$repo_group/$repo_name" --branch "${branch2}" 2>&1 | grep --color=auto -vE "^fatal: destination path .+? already exists and is not an empty directory.$" || true;
+                echo -e "switched ${Cyan}$project${NC} to the branch: ${Cyan}${branch2}${NC}";
             else
-                git clone "$repos" "$repo_group/$repo_name" 2>&1 | grep --color=auto -vE "^fatal: destination path .+? already exists and is not an empty directory.$" || true;
-                echo -e "switched ${Cyan}$repo_name${NC} to the default branch";
+                git clone "$repository" "$organization/$repo_group/$repo_name" 2>&1 | grep --color=auto -vE "^fatal: destination path .+? already exists and is not an empty directory.$" || true;
+                echo -e "switched ${Cyan}$project${NC} to the default branch";
             fi;
             rm -rf fetching ;
         done ;
@@ -123,15 +134,17 @@ git-clone-repo-in-group-folder () {
 
 ## Script.
 # This "for loop" sync all the repo modified in according to the $repo_date variable.
-for repos in $curl
+for repository in $repositories
 do
-    without_suffix=${repos%.git};
-    without_suffix_and_base_url=${without_suffix#*:};
-    repo_group=${without_suffix_and_base_url%%\/*};
-    repo_name=${without_suffix_and_base_url##*\/};
+    repo_without_suffix=${repository%.git};
+    repo_without_suffix_and_base_url=${repo_without_suffix#*:};
+    organization=${repo_without_suffix_and_base_url%%\/*};
+    project=${repo_without_suffix_and_base_url##*\/};
+    repo_group=${project%%_*};
+    repo_name=${project#*_};
     
     echo ""
-    echo -e " ${Green}Ispecting the $repo_group group${NC} "
+    echo -e " ${Green}Ispecting the $organization/$repo_group group${NC} "
     echo ""
     cd $base_dir/
     git-clone-repo-in-group-folder
