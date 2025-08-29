@@ -1,0 +1,12 @@
+## overwrite vars for GitHub
+
+user="mr_llen"
+organization="Org1"
+organizations="Org1 Org2"
+token='ghp_somelongstring'
+
+github_api="https://api.github.com/orgs/${organization}/repos"      # org repos
+github_api_string="-u ${user}:${token} ${github_api}?per_page=100 ${github_api}?per_page=100&page=2"
+
+branch1="develop"
+branch2="master"
