@@ -1,0 +1,8 @@
+## overwrite vars for GitLab
+
+token='gitlabtoken'
+
+gitlab_api="https://organization.url.com/api/v4/projects"
+gitlab_api_string="${gitlab_api}?private_token=${token}&per_page=100"
+
+excluded_group="something/" # this value must be filled, used random word if you don't want to exclude anything
